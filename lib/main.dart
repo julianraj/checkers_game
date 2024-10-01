@@ -60,12 +60,19 @@ class BoardState extends State<Board> {
       }
     }
   }
-
+  
   void movePiece(int index) {
     if (validMoves.contains(index)) {
       setState(() {
         pieces[index] = pieces[selectedPieceIndex!];  // Move piece to new square
         pieces[selectedPieceIndex!] = null;  // Clear the old square
+
+        // Check for captures
+        int capturedIndex = (index + selectedPieceIndex!) ~/ 2;
+        if ((index - selectedPieceIndex!).abs() > 9) {
+          pieces[capturedIndex] = null;  // Remove captured piece
+        }
+
         selectedPieceIndex = null;  // Deselect the piece
         validMoves = [];
 
