@@ -32,6 +32,7 @@ class BoardState extends State<Board> {
   List<int> validMoves = []; // Track valid moves for the selected piece
   List<bool?> pieces = List.filled(64, null); // Track pieces on the board (true -> player1, false -> player2, null -> empty)
   bool isPlayer1Turn = true; // Track player turns
+  bool canChangeSelectedPiece = true; // Track if the selected piece can be changed
 
   @override
   void initState() {
@@ -51,7 +52,7 @@ class BoardState extends State<Board> {
 
   // Function to select a piece and calculate valid moves
   void selectPiece(int index) {
-    if (pieces[index] == isPlayer1Turn) { // Only allow selecting current player's pieces
+    if (canChangeSelectedPiece && pieces[index] == isPlayer1Turn) { // Only allow selecting current player's pieces
       if (pieces[index] != null) {
         setState(() {
           selectedPieceIndex = index;
@@ -71,12 +72,22 @@ class BoardState extends State<Board> {
         int capturedIndex = (index + selectedPieceIndex!) ~/ 2;
         if ((index - selectedPieceIndex!).abs() > 9) {
           pieces[capturedIndex] = null;  // Remove captured piece
+
+          // Check for another capture move after jumping
+          List<int> furtherMoves = calculateValidMoves(index, pieces[index]!);
+          if (furtherMoves.isNotEmpty && furtherMoves.any((move) => (move - index).abs() > 9)) {
+            // Keep the turn with the current player if more captures are available
+            selectedPieceIndex = index;
+            validMoves = furtherMoves;
+            canChangeSelectedPiece = false;
+            return;
+          }
         }
 
         selectedPieceIndex = null;  // Deselect the piece
         validMoves = [];
-
         isPlayer1Turn = !isPlayer1Turn;  // Switch turns
+        canChangeSelectedPiece = true;
       });
     }
   }
