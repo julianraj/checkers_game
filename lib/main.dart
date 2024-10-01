@@ -31,6 +31,7 @@ class BoardState extends State<Board> {
   int? selectedPieceIndex; // Track which piece is selected
   List<int> validMoves = []; // Track valid moves for the selected piece
   List<bool?> pieces = List.filled(64, null); // Track pieces on the board (true -> player1, false -> player2, null -> empty)
+  bool isPlayer1Turn = true; // Track player turns
 
   @override
   void initState() {
@@ -50,11 +51,13 @@ class BoardState extends State<Board> {
 
   // Function to select a piece and calculate valid moves
   void selectPiece(int index) {
-    if (pieces[index] != null) {
-      setState(() {
-        selectedPieceIndex = index;
-        validMoves = calculateValidMoves(index, pieces[index]!);  // Calculate valid moves
-      });
+    if (pieces[index] == isPlayer1Turn) { // Only allow selecting current player's pieces
+      if (pieces[index] != null) {
+        setState(() {
+          selectedPieceIndex = index;
+          validMoves = calculateValidMoves(index, pieces[index]!);  // Calculate valid moves
+        });
+      }
     }
   }
 
@@ -65,6 +68,8 @@ class BoardState extends State<Board> {
         pieces[selectedPieceIndex!] = null;  // Clear the old square
         selectedPieceIndex = null;  // Deselect the piece
         validMoves = [];
+
+        isPlayer1Turn = !isPlayer1Turn;  // Switch turns
       });
     }
   }
