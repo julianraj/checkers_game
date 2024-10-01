@@ -30,13 +30,43 @@ class Board extends StatefulWidget {
 class BoardState extends State<Board> {
   int? selectedPieceIndex; // Track which piece is selected
   List<int> validMoves = []; // Track valid moves for the selected piece
+  List<bool?> pieces = List.filled(64, null); // Track pieces on the board (true -> player1, false -> player2, null -> empty)
+
+  @override
+  void initState() {
+    super.initState();
+    initPieces(); // initialize board with player pieces
+  }
+
+  void initPieces() {
+    // Initialize player 1 (true) and player 2 (false) pieces on the board
+    for (int i = 0; i < 24; i++) {
+      if ((i ~/ 8) % 2 == i % 2) pieces[i] = false;  // Player 2
+    }
+    for (int i = 40; i < 64; i++) {
+      if ((i ~/ 8) % 2 == i % 2) pieces[i] = true;  // Player 1
+    }
+  }
 
   // Function to select a piece and calculate valid moves
   void selectPiece(int index) {
-    setState(() {
-      selectedPieceIndex = index;
-      validMoves = calculateValidMoves(index, index >= 40);  // Calculate valid moves
-    });
+    if (pieces[index] != null) {
+      setState(() {
+        selectedPieceIndex = index;
+        validMoves = calculateValidMoves(index, pieces[index]!);  // Calculate valid moves
+      });
+    }
+  }
+
+  void movePiece(int index) {
+    if (validMoves.contains(index)) {
+      setState(() {
+        pieces[index] = pieces[selectedPieceIndex!];  // Move piece to new square
+        pieces[selectedPieceIndex!] = null;  // Clear the old square
+        selectedPieceIndex = null;  // Deselect the piece
+        validMoves = [];
+      });
+    }
   }
 
   // Placeholder function for calculating valid moves
@@ -68,14 +98,7 @@ class BoardState extends State<Board> {
         final isDark = (index ~/ 8) % 2 == 0
             ? index % 2 == 1
             : index % 2 == 0;  // Alternate light and dark squares
-        Widget? piece;
-        if(isDark) {
-          if(index < 24) { // firts 3 rows
-            piece = Piece(isPlayer1: false);
-          } else if(index >= 40) { // last 3 rows
-            piece = Piece(isPlayer1: true);
-          }
-        }
+        final piece = pieces[index];
 
         // Highlight the selected piece and valid move positions
         bool isSelected = index == selectedPieceIndex;
@@ -83,7 +106,11 @@ class BoardState extends State<Board> {
 
         return GestureDetector(
           onTap: () {
-            selectPiece(index);
+            if (piece != null) {
+              selectPiece(index); // Select piece
+            } else if (isValidMove) {
+              movePiece(index); // Move to valid square
+            }
           },
           child: Container(
             color: isDark ? Colors.brown : Colors.white,
@@ -91,7 +118,7 @@ class BoardState extends State<Board> {
               children: [
                 if (isSelected) Container(color: Colors.yellow.withOpacity(0.5)), // Highlight cell of the selected piece
                 if (isValidMove) Container(color: Colors.green.withOpacity(0.5)), // Highlight cell if its a valid move
-                piece != null ? Center(child: piece) : SizedBox.shrink()
+                if (piece != null) Center(child: Piece(isPlayer1: piece))
               ],
             )
           )
