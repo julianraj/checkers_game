@@ -82,11 +82,17 @@ class BoardState extends State<Board> {
 
     // Add simple move validation (for now, just check diagonal movement)
     if(!isPlayer1) {
-      if (row < 7 && col > 0) moves.add(index + 7);  // Down-left
-      if (row < 7 && col < 7) moves.add(index + 9);  // Down-right
+      if (row < 7 && col > 0 && pieces[index + 7] == null) moves.add(index + 7);  // Down-left movement
+      if (row < 6 && col > 1 && pieces[index + 7] == true && pieces[index + 14] == null) moves.add(index + 14);  // Down-left capture
+
+      if (row < 7 && col < 7 && pieces[index + 9] == null) moves.add(index + 9);  // Down-right movement
+      if (row < 6 && col < 6 && pieces[index + 9] == true && pieces[index + 18] == null) moves.add(index + 18);  // Down-right capture
     } else {
-      if (row > 0 && col > 0) moves.add(index - 9);  // Up-left
-      if (row > 0 && col < 7) moves.add(index - 7);  // Up-right
+      if (row > 0 && col > 0 && pieces[index - 9] == null) moves.add(index - 9);  // Up-left movement
+      if (row > 1 && col > 1 && pieces[index - 9] == false && pieces[index - 18] == null) moves.add(index - 18);  // Up-left capture
+
+      if (row > 0 && col < 7 && pieces[index - 7] == null) moves.add(index - 7);  // Up-right movement
+      if (row > 1 && col < 6 && pieces[index - 7] == false && pieces[index - 14] == null) moves.add(index - 14);  // Up-right capture
     }
 
     return moves;
