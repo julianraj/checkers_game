@@ -21,8 +21,41 @@ class CheckersGame extends StatelessWidget {
   }
 }
 
-class Board extends StatelessWidget {
+class Board extends StatefulWidget {
   Board({super.key});
+
+  @override
+  BoardState createState() => BoardState();
+}
+class BoardState extends State<Board> {
+  int? selectedPieceIndex; // Track which piece is selected
+  List<int> validMoves = []; // Track valid moves for the selected piece
+
+  // Function to select a piece and calculate valid moves
+  void selectPiece(int index) {
+    setState(() {
+      selectedPieceIndex = index;
+      validMoves = calculateValidMoves(index, index >= 40);  // Calculate valid moves
+    });
+  }
+
+  // Placeholder function for calculating valid moves
+  List<int> calculateValidMoves(int index, bool isPlayer1) {
+    List<int> moves = [];
+    int row = index ~/ 8;
+    int col = index % 8;
+
+    // Add simple move validation (for now, just check diagonal movement)
+    if(!isPlayer1) {
+      if (row < 7 && col > 0) moves.add(index + 7);  // Down-left
+      if (row < 7 && col < 7) moves.add(index + 9);  // Down-right
+    } else {
+      if (row > 0 && col > 0) moves.add(index - 9);  // Up-left
+      if (row > 0 && col < 7) moves.add(index - 7);  // Up-right
+    }
+
+    return moves;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -44,9 +77,24 @@ class Board extends StatelessWidget {
           }
         }
 
-        return Container(
-          color: isDark ? Colors.brown : Colors.white,
-          child: piece != null ? Center(child: piece) : null, // Center the piece in the cell if it exists
+        // Highlight the selected piece and valid move positions
+        bool isSelected = index == selectedPieceIndex;
+        bool isValidMove = validMoves.contains(index);
+
+        return GestureDetector(
+          onTap: () {
+            selectPiece(index);
+          },
+          child: Container(
+            color: isDark ? Colors.brown : Colors.white,
+            child: Stack(
+              children: [
+                if (isSelected) Container(color: Colors.yellow.withOpacity(0.5)), // Highlight cell of the selected piece
+                if (isValidMove) Container(color: Colors.green.withOpacity(0.5)), // Highlight cell if its a valid move
+                piece != null ? Center(child: piece) : SizedBox.shrink()
+              ],
+            )
+          )
         );
       },
     );
