@@ -30,7 +30,7 @@ class Board extends StatefulWidget {
 class BoardState extends State<Board> {
   int? selectedPieceIndex; // Track which piece is selected
   List<int> validMoves = []; // Track valid moves for the selected piece
-  List<bool?> pieces = List.filled(64, null); // Track pieces on the board (true -> player1, false -> player2, null -> empty)
+  List<Map<String, dynamic>?> pieces = List.filled(64, null); // Track pieces on the board (true -> player1, false -> player2, null -> empty)
   bool isPlayer1Turn = true; // Track player turns
   bool canChangeSelectedPiece = true; // Track if the selected piece can be changed
 
@@ -43,20 +43,20 @@ class BoardState extends State<Board> {
   void initPieces() {
     // Initialize player 1 (true) and player 2 (false) pieces on the board
     for (int i = 0; i < 24; i++) {
-      if ((i ~/ 8) % 2 == i % 2) pieces[i] = false;  // Player 2
+      if ((i ~/ 8) % 2 == i % 2) pieces[i] = { "isPlayer1": false, "isKing": false };  // Player 2
     }
     for (int i = 40; i < 64; i++) {
-      if ((i ~/ 8) % 2 == i % 2) pieces[i] = true;  // Player 1
+      if ((i ~/ 8) % 2 == i % 2) pieces[i] = { "isPlayer1": true, "isKing": false };  // Player 1
     }
   }
 
   // Function to select a piece and calculate valid moves
   void selectPiece(int index) {
-    if (canChangeSelectedPiece && pieces[index] == isPlayer1Turn) { // Only allow selecting current player's pieces
+    if (canChangeSelectedPiece && pieces[index]!['isPlayer1'] == isPlayer1Turn) { // Only allow selecting current player's pieces
       if (pieces[index] != null) {
         setState(() {
           selectedPieceIndex = index;
-          validMoves = calculateValidMoves(index, pieces[index]!);  // Calculate valid moves
+          validMoves = calculateValidMoves(index, pieces[index]!['isPlayer1'], pieces[index]!['isKing']);  // Calculate valid moves
         });
       }
     }
@@ -74,7 +74,7 @@ class BoardState extends State<Board> {
           pieces[capturedIndex] = null;  // Remove captured piece
 
           // Check for another capture move after jumping
-          List<int> furtherMoves = calculateValidMoves(index, pieces[index]!);
+          List<int> furtherMoves = calculateValidMoves(index, pieces[index]!['isPlayer1'], pieces[index]!['isKing']);
           if (furtherMoves.isNotEmpty && furtherMoves.any((move) => (move - index).abs() > 9)) {
             // Keep the turn with the current player if more captures are available
             selectedPieceIndex = index;
@@ -82,6 +82,11 @@ class BoardState extends State<Board> {
             canChangeSelectedPiece = false;
             return;
           }
+        }
+
+        // Promote to king if reaching the opposite end
+        if ((index < 8 && pieces[index]!['isPlayer1']) || (index >= 56 && !pieces[index]!['isPlayer1'])) {
+          pieces[index]!['isKing'] = true;
         }
 
         selectedPieceIndex = null;  // Deselect the piece
@@ -94,32 +99,37 @@ class BoardState extends State<Board> {
   }
 
   // Placeholder function for calculating valid moves
-  List<int> calculateValidMoves(int index, bool isPlayer1) {
+  List<int> calculateValidMoves(int index, bool isPlayer1, bool isKing) {
     List<int> moves = [];
     int row = index ~/ 8;
     int col = index % 8;
 
     // Add simple move validation (for now, just check diagonal movement)
-    if(!isPlayer1) {
+    if(isKing || !isPlayer1) {
       if (row < 7 && col > 0 && pieces[index + 7] == null) moves.add(index + 7);  // Down-left movement
-      if (row < 6 && col > 1 && pieces[index + 7] == true && pieces[index + 14] == null) moves.add(index + 14);  // Down-left capture
+      if (row < 6 && col > 1 && pieces[index + 7]?['isPlayer1'] == true && pieces[index + 14] == null) moves.add(index + 14);  // Down-left capture
+      if (row > 1 && col > 1 && pieces[index - 9]?['isPlayer1'] == true && isKing && pieces[index - 18] == null) moves.add(index - 18);  // Up-left capture (KING)
 
       if (row < 7 && col < 7 && pieces[index + 9] == null) moves.add(index + 9);  // Down-right movement
-      if (row < 6 && col < 6 && pieces[index + 9] == true && pieces[index + 18] == null) moves.add(index + 18);  // Down-right capture
-    } else {
+      if (row < 6 && col < 6 && pieces[index + 9]?['isPlayer1'] == true && pieces[index + 18] == null) moves.add(index + 18);  // Down-right capture
+      if (row > 1 && col < 6 && pieces[index - 7]?['isPlayer1'] == true && isKing && pieces[index - 14] == null) moves.add(index - 14);  // Up-right capture (KING)
+    }
+    if (isKing || isPlayer1) {
       if (row > 0 && col > 0 && pieces[index - 9] == null) moves.add(index - 9);  // Up-left movement
-      if (row > 1 && col > 1 && pieces[index - 9] == false && pieces[index - 18] == null) moves.add(index - 18);  // Up-left capture
+      if (row > 1 && col > 1 && pieces[index - 9]?['isPlayer1'] == false && pieces[index - 18] == null) moves.add(index - 18);  // Up-left capture
+      if (row < 6 && col > 1 && pieces[index + 7]?['isPlayer1'] == false && isKing && pieces[index + 14] == null) moves.add(index + 14);  // Down-left capture (KING)
 
       if (row > 0 && col < 7 && pieces[index - 7] == null) moves.add(index - 7);  // Up-right movement
-      if (row > 1 && col < 6 && pieces[index - 7] == false && pieces[index - 14] == null) moves.add(index - 14);  // Up-right capture
+      if (row > 1 && col < 6 && pieces[index - 7]?['isPlayer1'] == false && pieces[index - 14] == null) moves.add(index - 14);  // Up-right capture
+      if (row < 6 && col < 6 && pieces[index + 9]?['isPlayer1'] == false && isKing && pieces[index + 18] == null) moves.add(index + 18);  // Down-right capture (KING)
     }
 
     return moves;
   }
 
   void checkForWin() {
-    bool player1HasPieces = pieces.any((piece) => piece == true);
-    bool player2HasPieces = pieces.any((piece) => piece == false);
+    bool player1HasPieces = pieces.any((piece) => piece?['isPlayer1'] == true);
+    bool player2HasPieces = pieces.any((piece) => piece?['isPlayer1'] == false);
 
     if (!player1HasPieces) {
       showWinDialog("Player 2 Wins!");
@@ -185,7 +195,7 @@ class BoardState extends State<Board> {
               children: [
                 if (isSelected) Container(color: Colors.yellow.withOpacity(0.5)), // Highlight cell of the selected piece
                 if (isValidMove) Container(color: Colors.green.withOpacity(0.5)), // Highlight cell if its a valid move
-                if (piece != null) Center(child: Piece(isPlayer1: piece))
+                if (piece != null) Center(child: Piece(isPlayer1: piece['isPlayer1'], isKing: piece['isKing']))
               ],
             )
           )
@@ -197,8 +207,9 @@ class BoardState extends State<Board> {
 
 class Piece extends StatelessWidget {
   final bool isPlayer1;  // Determines if the piece belongs to player 1 or 2
+  final bool  isKing;
   
-  Piece({super.key, required this.isPlayer1});
+  Piece({super.key, required this.isPlayer1, required this.isKing });
   
   @override
   Widget build(BuildContext context) {
@@ -208,6 +219,7 @@ class Piece extends StatelessWidget {
         shape: BoxShape.circle,
         color: isPlayer1 ? Colors.red : Colors.black,  // Red for player 1, black for player 2
       ),
+      child: isKing ? Center(child: Icon(Icons.star, color: Colors.white)) : null,
     );
   }
 }
