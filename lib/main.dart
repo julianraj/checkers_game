@@ -89,6 +89,7 @@ class BoardState extends State<Board> {
         isPlayer1Turn = !isPlayer1Turn;  // Switch turns
         canChangeSelectedPiece = true;
       });
+      checkForWin();
     }
   }
 
@@ -114,6 +115,43 @@ class BoardState extends State<Board> {
     }
 
     return moves;
+  }
+
+  void checkForWin() {
+    bool player1HasPieces = pieces.any((piece) => piece == true);
+    bool player2HasPieces = pieces.any((piece) => piece == false);
+
+    if (!player1HasPieces) {
+      showWinDialog("Player 2 Wins!");
+    } else if (!player2HasPieces) {
+      showWinDialog("Player 1 Wins!");
+    }
+  }
+
+  void showWinDialog(String message) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text(message),
+          actions: [
+            TextButton(
+              child: Text("Restart"),
+              onPressed: () {
+                setState(() {
+                  // Reset game state for a new game
+                  pieces = List.filled(64, null);
+                  // Initialize pieces again
+                  initPieces();
+                  isPlayer1Turn = true;
+                });
+                Navigator.of(context).pop();
+              },
+            ),
+          ],
+        );
+      },
+    );
   }
 
   @override
