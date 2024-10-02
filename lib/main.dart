@@ -214,12 +214,21 @@ class Piece extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin: EdgeInsets.all(8.0),  // Add spacing around the piece
+      margin: const EdgeInsets.all(10),
       decoration: BoxDecoration(
         shape: BoxShape.circle,
         color: isPlayer1 ? Colors.red : Colors.black,  // Red for player 1, black for player 2
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.5),
+            spreadRadius: 1,
+            blurRadius: 3,
+            offset: Offset(0, 3)
+          )
+        ],
+        border: Border.all(color: Colors.white, width: 2)
       ),
-      child: isKing ? Center(child: Icon(Icons.star, color: Colors.white)) : null,
+      child: isKing ? Center(child: Icon(Icons.star, color: Colors.white, size: 24)) : null,
     );
   }
 }
