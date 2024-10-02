@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:audioplayers/audioplayers.dart';
 
 void main() {
   runApp(CheckersGame());
@@ -34,10 +35,30 @@ class BoardState extends State<Board> {
   bool isPlayer1Turn = true; // Track player turns
   bool canChangeSelectedPiece = true; // Track if the selected piece can be changed
 
+  final AudioPlayer _audioPlayer = AudioPlayer();  // Initialize audio player
+
   @override
   void initState() {
     super.initState();
     initPieces(); // initialize board with player pieces
+  }
+
+  @override
+  void dispose() {
+    _audioPlayer.dispose();  // Dispose of the audio player when not needed
+    super.dispose();
+  }
+
+  void playMoveSound() async {
+    await _audioPlayer.play(AssetSource('sounds/move.mp3'));  // Play move sound
+  }
+
+  void playCaptureSound() async {
+    await _audioPlayer.play(AssetSource('sounds/capture.mp3'));  // Play capture sound
+  }
+
+  void playWinSound() async {
+    await _audioPlayer.play(AssetSource('sounds/win.mp3'));  // Play win sound
   }
 
   void initPieces() {
@@ -68,11 +89,17 @@ class BoardState extends State<Board> {
         pieces[index] = pieces[selectedPieceIndex!];  // Move piece to new square
         pieces[selectedPieceIndex!] = null;  // Clear the old square
 
+        // Promote to king if reaching the opposite end
+        if ((index < 8 && pieces[index]!['isPlayer1']) || (index >= 56 && !pieces[index]!['isPlayer1'])) {
+          pieces[index]!['isKing'] = true;
+        }
+
         // Check for captures
         int capturedIndex = (index + selectedPieceIndex!) ~/ 2;
-        if ((index - selectedPieceIndex!).abs() > 9) {
+        bool isCaptured = (index - selectedPieceIndex!).abs() > 9;
+        if (isCaptured) {
           pieces[capturedIndex] = null;  // Remove captured piece
-
+          playCaptureSound();
           // Check for another capture move after jumping
           List<int> furtherMoves = calculateValidMoves(index, pieces[index]!['isPlayer1'], pieces[index]!['isKing']);
           if (furtherMoves.isNotEmpty && furtherMoves.any((move) => (move - index).abs() > 9)) {
@@ -82,13 +109,9 @@ class BoardState extends State<Board> {
             canChangeSelectedPiece = false;
             return;
           }
+        } else {
+          playMoveSound();
         }
-
-        // Promote to king if reaching the opposite end
-        if ((index < 8 && pieces[index]!['isPlayer1']) || (index >= 56 && !pieces[index]!['isPlayer1'])) {
-          pieces[index]!['isKing'] = true;
-        }
-
         selectedPieceIndex = null;  // Deselect the piece
         validMoves = [];
         isPlayer1Turn = !isPlayer1Turn;  // Switch turns
@@ -107,21 +130,21 @@ class BoardState extends State<Board> {
     // Add simple move validation (for now, just check diagonal movement)
     if(isKing || !isPlayer1) {
       if (row < 7 && col > 0 && pieces[index + 7] == null) moves.add(index + 7);  // Down-left movement
-      if (row < 6 && col > 1 && pieces[index + 7]?['isPlayer1'] == true && pieces[index + 14] == null) moves.add(index + 14);  // Down-left capture
-      if (row > 1 && col > 1 && pieces[index - 9]?['isPlayer1'] == true && isKing && pieces[index - 18] == null) moves.add(index - 18);  // Up-left capture (KING)
+      if (row < 6 && col > 1 && pieces[index + 7]?['isPlayer1'] == !isPlayer1 && pieces[index + 14] == null) moves.add(index + 14);  // Down-left capture
+      if (row > 1 && col > 1 && pieces[index - 9]?['isPlayer1'] == !isPlayer1 && isKing && pieces[index - 18] == null) moves.add(index - 18);  // Up-left capture (KING)
 
       if (row < 7 && col < 7 && pieces[index + 9] == null) moves.add(index + 9);  // Down-right movement
-      if (row < 6 && col < 6 && pieces[index + 9]?['isPlayer1'] == true && pieces[index + 18] == null) moves.add(index + 18);  // Down-right capture
-      if (row > 1 && col < 6 && pieces[index - 7]?['isPlayer1'] == true && isKing && pieces[index - 14] == null) moves.add(index - 14);  // Up-right capture (KING)
+      if (row < 6 && col < 6 && pieces[index + 9]?['isPlayer1'] == !isPlayer1 && pieces[index + 18] == null) moves.add(index + 18);  // Down-right capture
+      if (row > 1 && col < 6 && pieces[index - 7]?['isPlayer1'] == !isPlayer1 && isKing && pieces[index - 14] == null) moves.add(index - 14);  // Up-right capture (KING)
     }
     if (isKing || isPlayer1) {
       if (row > 0 && col > 0 && pieces[index - 9] == null) moves.add(index - 9);  // Up-left movement
-      if (row > 1 && col > 1 && pieces[index - 9]?['isPlayer1'] == false && pieces[index - 18] == null) moves.add(index - 18);  // Up-left capture
-      if (row < 6 && col > 1 && pieces[index + 7]?['isPlayer1'] == false && isKing && pieces[index + 14] == null) moves.add(index + 14);  // Down-left capture (KING)
+      if (row > 1 && col > 1 && pieces[index - 9]?['isPlayer1'] == !isPlayer1 && pieces[index - 18] == null) moves.add(index - 18);  // Up-left capture
+      if (row < 6 && col > 1 && pieces[index + 7]?['isPlayer1'] == !isPlayer1 && isKing && pieces[index + 14] == null) moves.add(index + 14);  // Down-left capture (KING)
 
       if (row > 0 && col < 7 && pieces[index - 7] == null) moves.add(index - 7);  // Up-right movement
-      if (row > 1 && col < 6 && pieces[index - 7]?['isPlayer1'] == false && pieces[index - 14] == null) moves.add(index - 14);  // Up-right capture
-      if (row < 6 && col < 6 && pieces[index + 9]?['isPlayer1'] == false && isKing && pieces[index + 18] == null) moves.add(index + 18);  // Down-right capture (KING)
+      if (row > 1 && col < 6 && pieces[index - 7]?['isPlayer1'] == !isPlayer1 && pieces[index - 14] == null) moves.add(index - 14);  // Up-right capture
+      if (row < 6 && col < 6 && pieces[index + 9]?['isPlayer1'] == !isPlayer1 && isKing && pieces[index + 18] == null) moves.add(index + 18);  // Down-right capture (KING)
     }
 
     return moves;
@@ -131,10 +154,9 @@ class BoardState extends State<Board> {
     bool player1HasPieces = pieces.any((piece) => piece?['isPlayer1'] == true);
     bool player2HasPieces = pieces.any((piece) => piece?['isPlayer1'] == false);
 
-    if (!player1HasPieces) {
-      showWinDialog("Player 2 Wins!");
-    } else if (!player2HasPieces) {
-      showWinDialog("Player 1 Wins!");
+    if(!player2HasPieces || !player1HasPieces) {
+      playWinSound();
+      showWinDialog(!player2HasPieces ? "Player 2 Wins!" : "Player 1 Wins!");
     }
   }
 
