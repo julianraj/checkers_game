@@ -188,41 +188,65 @@ class BoardState extends State<Board> {
 
   @override
   Widget build(BuildContext context) {
-    return GridView.builder(
-      itemCount: 64,  // 8x8 board = 64 squares
-      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 8,  // 8 columns
-      ),
-      itemBuilder: (context, index) {
-        final isDark = (index ~/ 8) % 2 == 0
-            ? index % 2 == 1
-            : index % 2 == 0;  // Alternate light and dark squares
-        final piece = pieces[index];
+    return Column(
+      children: [
+        Flexible(
+          flex: 1,
+          child: GridView.builder(
+            itemCount: 64,  // 8x8 board = 64 squares
+            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 8,  // 8 columns
+            ),
+            itemBuilder: (context, index) {
+              final isDark = (index ~/ 8) % 2 == 0
+                  ? index % 2 == 1
+                  : index % 2 == 0;  // Alternate light and dark squares
+              final piece = pieces[index];
 
-        // Highlight the selected piece and valid move positions
-        bool isSelected = index == selectedPieceIndex;
-        bool isValidMove = validMoves.contains(index);
+              // Highlight the selected piece and valid move positions
+              bool isSelected = index == selectedPieceIndex;
+              bool isValidMove = validMoves.contains(index);
 
-        return GestureDetector(
-          onTap: () {
-            if (piece != null) {
-              selectPiece(index); // Select piece
-            } else if (isValidMove) {
-              movePiece(index); // Move to valid square
-            }
-          },
-          child: Container(
-            color: isDark ? Colors.brown : Colors.white,
-            child: Stack(
-              children: [
-                if (isSelected) Container(color: Colors.yellow.withOpacity(0.5)), // Highlight cell of the selected piece
-                if (isValidMove) Container(color: Colors.green.withOpacity(0.5)), // Highlight cell if its a valid move
-                if (piece != null) Center(child: Piece(isPlayer1: piece['isPlayer1'], isKing: piece['isKing']))
-              ],
-            )
+              return GestureDetector(
+                onTap: () {
+                  if (piece != null) {
+                    selectPiece(index); // Select piece
+                  } else if (isValidMove) {
+                    movePiece(index); // Move to valid square
+                  }
+                },
+                child: Container(
+                  color: isDark ? Colors.brown : Colors.white,
+                  child: Stack(
+                    children: [
+                      if (isSelected) Container(color: Colors.yellow.withOpacity(0.5)), // Highlight cell of the selected piece
+                      if (isValidMove) Container(color: Colors.green.withOpacity(0.5)), // Highlight cell if its a valid move
+                      if (piece != null) Center(child: Piece(isPlayer1: piece['isPlayer1'], isKing: piece['isKing']))
+                    ],
+                  )
+                )
+              );
+            },
           )
-        );
-      },
+        ),
+        Container(
+          padding: EdgeInsets.all(20),
+          child: ElevatedButton(
+            onPressed: () {
+              setState(() {
+                pieces = List.filled(64, null);  // Reset the pieces array
+                initPieces();
+              });
+            },
+            child: Text('New Game'),
+            style: ElevatedButton.styleFrom(
+              padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+              textStyle: TextStyle(fontSize: 18, color: Colors.white),
+              backgroundColor: Colors.green,
+            ),
+          )
+        )
+      ],
     );
   }
 }
